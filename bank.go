@@ -11,6 +11,7 @@ import (
 type Bank struct {
 	Id      string
 	Balance float64
+	Seq     int
 }
 
 var (
@@ -78,16 +79,21 @@ func NewBank(id string, clnt *aerospike.Client) (*Bank, error) {
 	}
 
 	var balance float64
+	var seq int
 
 	if rec != nil {
 		if _, ok := rec.Bins["balance"]; ok && rec.Bins["balance"] != nil {
 			balance = float64(rec.Bins["balance"].(int)) / MonetaryShift
+		}
+		if _, ok := rec.Bins["seq"]; ok && rec.Bins["seq"] != nil {
+			seq = rec.Bins["seq"].(int)
 		}
 	}
 
 	bankModel := Bank{
 		Id:      id,
 		Balance: balance,
+		Seq:     seq,
 	}
 
 	return &bankModel, nil
@@ -102,7 +108,18 @@ func (self *Bank) addFunds(amount float64, Clnt *aerospike.Client) (int32, error
 		return 0, err
 	}
 
-	rec, err := Clnt.Operate(WPolicy, key, aerospike.AddOp(aerospike.NewBin("balance", intAmount)))
+	Clnt.PutBins(WPolicy, key, aerospike.NewBin("id", self.Id))
 
-	return int32(rec.Generation), err
+	_, err = Clnt.Operate(WPolicy, key,
+		aerospike.AddOp(aerospike.NewBin("balance", intAmount)),
+		aerospike.AddOp(aerospike.NewBin("seq", 1)))
+
+	if err != nil {
+		return 0, err
+	}
+
+	res, _ := Clnt.Get(nil, key)
+	seq := res.Bins["seq"].(int)
+
+	return int32(seq), err
 }

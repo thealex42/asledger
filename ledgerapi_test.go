@@ -27,6 +27,10 @@ var _ = Describe("ledgerapi", func() {
 		r = buildRouter()
 	})
 
+	BeforeEach(func() {
+
+	})
+
 	It("Should have connections", func() {
 		Expect(Clnt).ToNot(BeNil())
 	})
@@ -45,8 +49,8 @@ var _ = Describe("ledgerapi", func() {
 
 	It("Should move funds", func() {
 		data := url.Values{}
-		data.Set("from", "bank1")
-		data.Add("to", "bank2")
+		data.Set("from", "root")
+		data.Add("to", "test")
 		data.Add("amount", "42.2")
 
 		req, err := http.NewRequest("POST", "/funds/move", bytes.NewBufferString(data.Encode()))
@@ -59,12 +63,48 @@ var _ = Describe("ledgerapi", func() {
 		Expect(resp.Code).To(Equal(200))
 	})
 
-	Measure("Balance req speed", func(b Benchmarker) {
-		runtime := b.Time("run", func() {
-			_, err := NewBank("bank1", Clnt)
-			Expect(err).Should(BeNil())
-		})
-		Ω(runtime.Seconds()).Should(BeNumerically("<", 1), "SomethingHard() shouldn't take too long.")
+	It("Should keep sequences", func() {
 
-	}, 1000)
+		modelRoot, err := NewBank("root", Clnt)
+		modelBank1, err := NewBank("bank1", Clnt)
+
+		modelRoot.addFunds(-100, Clnt)
+		modelBank1.addFunds(100, Clnt)
+
+		modelBank1, err = NewBank("bank1", Clnt)
+		Expect(err).To(BeNil())
+		Expect(modelBank1.Balance).To(Equal(100.0))
+
+		modelRoot, err = NewBank("root", Clnt)
+		Expect(err).To(BeNil())
+		Expect(modelRoot.Seq).To(Equal(2))
+
+		modelBank1, err = NewBank("bank1", Clnt)
+		Expect(err).To(BeNil())
+		modelBank2, err := NewBank("bank2", Clnt)
+		Expect(err).To(BeNil())
+
+		for i := 0; i < 100; i++ {
+			modelBank1.addFunds(-1, Clnt)
+			modelBank2.addFunds(1, Clnt)
+		}
+
+		modelBank1, err = NewBank("bank1", Clnt)
+		Expect(err).To(BeNil())
+		Expect(modelBank1.Balance).To(Equal(0.0))
+
+		modelBank2, err = NewBank("bank2", Clnt)
+		Expect(err).To(BeNil())
+		Expect(modelBank2.Balance).To(Equal(100.0))
+
+	})
+
+	//	Measure("Balance req speed", func(b Benchmarker) {
+	//		runtime := b.Time("run", func() {
+	//			_, err := NewBank("bank1", Clnt)
+	//			Expect(err).Should(BeNil())
+	//		})
+	//		Ω(runtime.Seconds()).Should(BeNumerically("<", 1), "SomethingHard() shouldn't take too long.")
+
+	//	}, 1000)
 })

@@ -1,0 +1,35 @@
+version: '2'
+services:
+
+  aerospike1:
+    restart: always
+    image: aerospike/aerospike-server
+    ports:
+      - "41000:3000"
+      - "41001:3001"
+      - "41002:3002"
+      - "41003:3003"
+    volumes:
+      - ./conf/aerospike1.conf:/etc/aerospike/aerospike.conf
+
+  aerospike2:
+    restart: always
+    image: aerospike/aerospike-server
+    ports:
+      - "42000:3000"
+      - "42001:3001"
+      - "42002:3002"
+      - "42003:3003"
+    volumes:
+      - ./conf/aerospike2.conf:/etc/aerospike/aerospike.conf
+
+  aerospike3:
+    restart: always
+    image: aerospike/aerospike-server
+    ports:
+      - "43000:3000"
+      - "43001:3001"
+      - "43002:3002"
+      - "43003:3003"
+    volumes:
+      - ./conf/aerospike3.conf:/etc/aerospike/aerospike.conf

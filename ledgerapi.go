@@ -18,8 +18,10 @@ type ServerState struct {
 }
 
 var (
-	DBHost        = "127.0.0.1"      // default database address
-	DBPort        = 3000             // default database port
+	asHost1 = aerospike.NewHost("192.168.33.99", 41000)
+	asHost2 = aerospike.NewHost("192.168.33.99", 42000)
+	asHost3 = aerospike.NewHost("192.168.33.99", 43000)
+
 	Listen        = "127.0.0.1:8787" // default server
 	DBNs          = "asledger"       // namespace
 	DBTblAccounts = "acc"            // table with data
@@ -47,6 +49,16 @@ func handleMoveFunds(c *gin.Context) {
 	}
 
 	modelFrom, _ := NewBank(from, Clnt)
+
+	if from != RootBalance {
+		if modelFrom.Balance < amount {
+			c.JSON(500, gin.H{
+				"err": "insufficient funds",
+			})
+			return
+		}
+	}
+
 	modelTo, _ := NewBank(to, Clnt)
 
 	modelFrom.addFunds(0-amount, Clnt)
@@ -54,7 +66,9 @@ func handleMoveFunds(c *gin.Context) {
 
 	BankSaveStats(amount, Clnt)
 
-	// add root balance logic
+	c.JSON(200, gin.H{
+		"success": true,
+	})
 }
 
 func handleBalance(c *gin.Context) {
@@ -68,6 +82,7 @@ func handleBalance(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"balance": bankModel.Balance,
+		"seq":     bankModel.Seq,
 	})
 }
 
@@ -134,16 +149,10 @@ func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(logfd)
 
-	if os.Getenv("DBHOST") != "" {
-		DBHost = os.Getenv("DBHOST")
-	}
-
-	if os.Getenv("DBPORT") != "" {
-		DBPort, err = strconv.Atoi(os.Getenv("DBPOST"))
-		panicOnError(err)
-	}
-
-	Clnt, err = aerospike.NewClient(DBHost, DBPort)
+	Clnt, err = aerospike.NewClientWithPolicyAndHost(nil,
+		asHost1)
+	//asHost2,
+	//asHost3)
 	panicOnError(err)
 }
 
