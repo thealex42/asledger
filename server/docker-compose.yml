@@ -4,6 +4,10 @@ services:
   aerospike1:
     restart: always
     image: aerospike/aerospike-server
+    ulimits:
+      nofile:
+        soft: 20000
+        hard: 40000
     ports:
       - "41000:3000"
       - "41001:3001"
@@ -15,6 +19,10 @@ services:
   aerospike2:
     restart: always
     image: aerospike/aerospike-server
+    ulimits:
+      nofile:
+        soft: 20000
+        hard: 40000
     ports:
       - "42000:3000"
       - "42001:3001"
@@ -26,6 +34,10 @@ services:
   aerospike3:
     restart: always
     image: aerospike/aerospike-server
+    ulimits:
+      nofile:
+        soft: 20000
+        hard: 40000
     ports:
       - "43000:3000"
       - "43001:3001"
